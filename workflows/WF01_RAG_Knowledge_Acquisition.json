@@ -1,0 +1,145 @@
+{
+  "name": "WF01_RAG_Knowledge_Acquisition",
+  "nodes": [
+    {
+      "parameters": {
+        "tableId": "rag_documents",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "file_id",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "file_name",
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "NEW"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        48,
+        -256
+      ],
+      "id": "1236f5de-4db6-4a9e-b420-86d133c29b65",
+      "name": "Insert_Knowledge_Documents",
+      "credentials": {
+        "supabaseApi": {
+          "id": "IMcp1RRcTOM3QmUk",
+          "name": "RAG_Project"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "dWRPNIxbV8Ummb5T",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/dWRPNIxbV8Ummb5T",
+          "cachedResultName": "WF02_RAG_Knowledge_Intelligence"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        256,
+        -256
+      ],
+      "id": "84281c63-b56e-4fa4-b455-54ad6c43a07b",
+      "name": "Call 'WF02_RAG_Knowledge_Intelligence'"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "11EU7xm-_e4Y9OGwzNg7-92_d9HTf06FY",
+          "mode": "list",
+          "cachedResultName": "Ephraim_Knowledgebase",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/11EU7xm-_e4Y9OGwzNg7-92_d9HTf06FY"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        -256
+      ],
+      "id": "daf563c2-33ee-40f4-8580-f5f310256430",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fCzKjMQj8BTBc5O7",
+          "name": "Ephraim_Drive"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Insert_Knowledge_Documents": {
+      "main": [
+        [
+          {
+            "node": "Call 'WF02_RAG_Knowledge_Intelligence'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Insert_Knowledge_Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "d41b0545-2f2b-4b95-9285-86520b8b0dbc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ae4e48d5a6f5787668e3e31e4ca61012ccc4f24961dcb8bd327df4dd298b05cc"
+  },
+  "nodeGroups": [],
+  "id": "SxeQ2AEOxg64BpC4",
+  "tags": []
+}

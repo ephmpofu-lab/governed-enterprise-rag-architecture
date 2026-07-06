@@ -1,0 +1,403 @@
+{
+  "name": "WF03_RAG_Vector_Indexing",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "83df5480-4973-4600-9846-2997643bf0dc",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "rag_documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "document_id",
+              "keyValue": "={{ $json.document_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        256,
+        0
+      ],
+      "id": "2582977c-c616-49e5-a327-b30a644a814a",
+      "name": "Get a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "IMcp1RRcTOM3QmUk",
+          "name": "RAG_Project"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $('When Executed by Another Workflow').first().json.data;\n\nconst chunkSize = 1000;\nconst overlap = 150;\n\nconst chunks = [];\n\nlet start = 0;\nlet chunkNumber = 1;\n\nwhile (start < text.length) {\n\n  const end = start + chunkSize;\n\n  chunks.push({\n    json: {\n      document_id: $json.document_id,\n      file_id: $json.file_id,\n      file_name: $json.file_name,\n      chunk_number: chunkNumber,\n      chunk_text: text.slice(start, end)\n    }\n  });\n\n  start += chunkSize - overlap;\n  chunkNumber++;\n}\n\nreturn chunks;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        0
+      ],
+      "id": "c0c31873-6a0b-40ab-bad8-7121f0a28768",
+      "name": "Chunk_Document"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "rag_chunks",
+          "mode": "list",
+          "cachedResultName": "rag_chunks"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        0
+      ],
+      "id": "f0238fe0-3f12-4267-8159-f21742e5d143",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "IMcp1RRcTOM3QmUk",
+          "name": "RAG_Project"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        192
+      ],
+      "id": "174ac837-20b9-4f43-a2d6-ee1d570a63e9",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "OkEHtnDF2RjB99Uc",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.chunk_text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "document_id",
+                "value": "={{ $json.document_id }}"
+              },
+              {
+                "name": "file_id",
+                "value": "={{ $json.file_id }}"
+              },
+              {
+                "name": "file_name",
+                "value": "={{ $json.file_name }}"
+              },
+              {
+                "name": "chunk_number",
+                "value": "={{ $json.chunk_number }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        320
+      ],
+      "id": "87886cdd-6aa7-4d1b-ade2-cb4a189d68ed",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [items[0]];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "c6fc8d12-5858-4fed-bff5-7110138091e0",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "rag_documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "document_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.metadata.document_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "INDEXED"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "NOW()"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "687a82bd-e749-4a72-be97-1504898f5e2a",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "IMcp1RRcTOM3QmUk",
+          "name": "RAG_Project"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "rag_documents",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "document_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.document_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "category",
+              "fieldValue": "={{ $json.category }}"
+            },
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $json.metadata_output.title }}"
+            },
+            {
+              "fieldId": "summary",
+              "fieldValue": "={{ $json.metadata_output.summary }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.metadata_output }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "PROCESSED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -192
+      ],
+      "id": "cfe4cda9-337a-4a3f-b2f4-0f26cfab127b",
+      "name": "Update a row1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "IMcp1RRcTOM3QmUk",
+          "name": "RAG_Project"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "rag_chunks",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "document_id",
+              "fieldValue": "={{ $json.metadata.document_id }}"
+            },
+            {
+              "fieldId": "file_name",
+              "fieldValue": "={{ $json.metadata.file_name }}"
+            },
+            {
+              "fieldId": "file_id",
+              "fieldValue": "={{ $json.metadata.file_id }}"
+            },
+            {
+              "fieldId": "chunk_number",
+              "fieldValue": "={{ $json.metadata.chunk_number }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.metadata }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "c2d04ecf-b37e-42c3-a9e7-7aa37b616907",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "IMcp1RRcTOM3QmUk",
+          "name": "RAG_Project"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update a row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Chunk_Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunk_Document": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "03f6b9f6-bcf2-489c-abc2-d7f6783457ef",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ae4e48d5a6f5787668e3e31e4ca61012ccc4f24961dcb8bd327df4dd298b05cc"
+  },
+  "nodeGroups": [],
+  "id": "hKsm5h28jBupsMLI",
+  "tags": []
+}
